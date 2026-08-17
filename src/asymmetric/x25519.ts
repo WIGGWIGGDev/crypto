@@ -7,10 +7,35 @@
  */
 
 import { x25519 } from '@noble/curves/ed25519.js'
+import { hkdf } from '@noble/hashes/hkdf.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 
 export interface X25519Keypair {
   readonly privateKey: Uint8Array
   readonly publicKey: Uint8Array
+}
+
+/**
+ * Deterministically derive an X25519 keypair from a secret (e.g. the Vault Key
+ * V, or a BIP39 seed half) via HKDF-SHA256 with a domain-separation `info`.
+ * Same secret + info ⇒ same keypair (so a registered public key keeps matching
+ * across unlocks / a V rotation re-derives the right key); HKDF is one-way, so
+ * the keypair never exposes the secret.
+ *
+ * Callers MUST use a DISTINCT `info` per purpose (one tag per keypair role) so
+ * the keys are domain-separated — a compromise of one derived key can never
+ * yield another. Single source of this derivation for every HKDF-from-secret
+ * X25519 keypair a host derives.
+ */
+export function deriveX25519KeypairFromSecret(
+  secret: Uint8Array,
+  info: string | Uint8Array,
+  salt?: Uint8Array,
+): X25519Keypair {
+  const infoBytes = typeof info === 'string' ? new TextEncoder().encode(info) : info
+  const privateKey = hkdf(sha256, secret, salt, infoBytes, 32)
+  const publicKey = x25519PublicFromPrivate(privateKey)
+  return { privateKey, publicKey }
 }
 
 /**

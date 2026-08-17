@@ -13,6 +13,11 @@
  * authenticate (it still cannot decrypt vault data). The Ed25519 challenge-
  * response scheme in ../auth-signing removes that property and supersedes this
  * one; this path remains only to read accounts that haven't migrated.
+ *
+ * Note: this module is the canonical definition of the scheme. A host that computes the same
+ * value inline instead of importing it must produce byte-for-byte identical output — a single
+ * wrong byte locks accounts out at login — so any such implementation should be guarded by
+ * cross-implementation known-answer tests against this one.
  */
 
 import { hmac } from '@noble/hashes/hmac.js'

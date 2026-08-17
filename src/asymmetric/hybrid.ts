@@ -132,6 +132,17 @@ export function serializeEnvelope(envelope: HybridEnvelope): Uint8Array {
 }
 
 /**
+ * Convenience: seal `plaintext` to `recipientPublicKey` and return the
+ * serialized envelope bytes in one step — the exact shape every caller needs
+ * before base64-encoding for transport/DB. Equivalent to
+ * `serializeEnvelope(seal(recipientPublicKey, plaintext))`; the recovery
+ * master-key wrap and re-seal sites all want precisely this.
+ */
+export function sealSerialized(recipientPublicKey: Uint8Array, plaintext: Uint8Array): Uint8Array {
+  return serializeEnvelope(seal(recipientPublicKey, plaintext))
+}
+
+/**
  * Parse the serialized envelope back into its fields. Throws on under-length
  * input; does not validate crypto (pass to `open` for that).
  */

@@ -4,6 +4,7 @@ import {
   deserializeEnvelope,
   open,
   seal,
+  sealSerialized,
   serializeEnvelope,
   type HybridEnvelope,
 } from './hybrid.js'
@@ -80,6 +81,19 @@ describe('hybrid.serializeEnvelope / deserializeEnvelope', () => {
 
   it('throws on under-length input', () => {
     expect(() => deserializeEnvelope(new Uint8Array(10))).toThrow(/too short/)
+  })
+
+  it('sealSerialized equals serializeEnvelope(seal(...)) and round-trips through open', () => {
+    const { privateKey, publicKey } = generateX25519Keypair()
+    const plaintext = new TextEncoder().encode('master key wrap')
+
+    const wire = sealSerialized(publicKey, plaintext)
+    // Same wire shape as the two-step form (fresh ephemeral/nonce, so only the
+    // structure and round-trip are asserted, not byte-equality across calls).
+    const parsed = deserializeEnvelope(wire)
+    expect(parsed.schemeVersion).toBe(1)
+    expect(parsed.ephemeralPublicKey.length).toBe(32)
+    expect(open(privateKey, publicKey, parsed)).toEqual(plaintext)
   })
 })
 

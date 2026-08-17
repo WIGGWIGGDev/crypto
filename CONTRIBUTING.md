@@ -24,8 +24,9 @@ fastest, most reliable way to contribute is an issue.
 - The domain-separation strings (the `wiggwigg-*` tags) and the on-disk scheme versions
   are **load-bearing**: stored data depends on them. They change through the versioning
   mechanism in `versions.ts`, never by editing a constant in place.
-- Every key derived from the master key is domain-separated by a distinct HKDF `info`
-  tag. Keep that property intact.
+- Every derived key is domain-separated, by a distinct HKDF `info` tag or a distinct
+  HMAC label. Keep that property intact: a change that lets two purposes share a tag
+  re-introduces the key reuse the split exists to prevent.
 
 ## Building locally
 

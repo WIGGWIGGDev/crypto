@@ -14,10 +14,29 @@ export const ASYMMETRIC_SCHEME_CURRENT_VERSION = 1 as const
 // asymmetric scheme over the 32-byte master key.
 export const WRAPPED_MASTER_KEY_CURRENT_VERSION = 1 as const
 
+// Recovery escrow, version 2: the SAME X25519 seal construction, but its
+// plaintext is the 32-byte Vault Key V, NOT the master key M. V is preserved
+// across KDF rotations and password changes, so a v2 escrow doesn't need
+// re-sealing on every M-rotation — which eliminates the automatic re-seal paths a
+// malicious server could target by substituting its own recovery key. This is a
+// SEPARATE constant from WRAPPED_MASTER_KEY_CURRENT_VERSION on purpose: the sites
+// that still seal M must stay pinned at 1, so a v2 escrow must never be produced
+// by bumping the M constant. A recovering client dispatches on this value to
+// decide whether the unsealed 32 bytes are V (===2) or M (else), then
+// self-validates before trusting them.
+export const WRAPPED_VAULT_ESCROW_VERSION = 2 as const
+
 // Per-login challenge-response auth: the client derives a signing keypair from
 // the master key and signs a fresh server challenge, and the server keeps only
 // the public key. v1 is Ed25519 over HKDF-SHA256(masterKey); see ./auth-signing.
 export const AUTH_SCHEME_CURRENT_VERSION = 1 as const
+
+// Recovery-auth challenge-response: at recovery, the client signs a fresh server
+// challenge with a keypair derived from the BIP39 mnemonic (NOT the master key),
+// so a v2 escrow that yields V but no M can still authorize a password-change.
+// v1 is Ed25519 over HKDF-SHA256 of the recovery seed (domain-separated from the
+// X25519 seal key); see ./recovery/ed25519-auth-from-mnemonic.
+export const RECOVERY_AUTH_SCHEME_CURRENT_VERSION = 1 as const
 
 // Password-stretching KDF that turns a password or PIN into the master key (and
 // other stretched keys).
@@ -60,6 +79,7 @@ export const ASYMMETRIC_SCHEME_LABELS: Readonly<Record<number, string>> = {
 
 export const WRAPPED_MASTER_KEY_LABELS: Readonly<Record<number, string>> = {
   1: 'x25519-hkdf-xchacha20poly1305',
+  2: 'x25519-hkdf-xchacha20poly1305-vault-key',
 }
 
 export const SERVER_KEY_LABELS: Readonly<Record<number, string>> = {
@@ -70,6 +90,10 @@ export const AUTH_SCHEME_LABELS: Readonly<Record<number, string>> = {
   1: 'ed25519-hkdf-sha256',
 }
 
+export const RECOVERY_AUTH_SCHEME_LABELS: Readonly<Record<number, string>> = {
+  1: 'ed25519-recovery-hkdf-sha256',
+}
+
 const LABEL_TABLES = {
   kdf: KDF_VERSION_LABELS,
   vault_key: VAULT_KEY_VERSION_LABELS,
@@ -77,6 +101,7 @@ const LABEL_TABLES = {
   wrapped_master_key: WRAPPED_MASTER_KEY_LABELS,
   server_key: SERVER_KEY_LABELS,
   auth_scheme: AUTH_SCHEME_LABELS,
+  recovery_auth_scheme: RECOVERY_AUTH_SCHEME_LABELS,
 } as const
 
 /**

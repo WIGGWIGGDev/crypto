@@ -37,6 +37,24 @@ const TEST_PARAMS = {
 } as const
 
 describe('argon2id determinism', () => {
+  // Canonical cross-platform anchor. This @noble (web) output for the PRODUCTION
+  // master params (PASSWORD_ASCII + FIXED_SALT_32 + ARGON2_MASTER_PARAMS) MUST
+  // equal what the native ports produce, or a user who derives their key on web
+  // cannot unwrap their vault on mobile. The native ports pin this same hex in
+  // their own known-answer tests. Change it only when @noble/hashes is
+  // intentionally bumped AND both native
+  // ports are re-validated against the new bytes.
+  const MASTER_KAT_EXPECTED_HEX = 'fcdf988e6b17b6f2a5eb5a4a0962cecef3991e960aa1c6cbb8da66ec03ccb7be'
+
+  // ARGON2_MASTER_PARAMS is memory-hard (128 MiB) and intentionally ~1s; under a
+  // loaded test run the memory/CPU contention can push a single
+  // derivation past vitest's default 5s. Give it a generous explicit timeout so
+  // this deterministic KAT can't flake on load.
+  it('master params match the cross-platform reference (web anchor for native KATs)', async () => {
+    const out = await argon2id(PASSWORD_ASCII, FIXED_SALT_32, ARGON2_MASTER_PARAMS)
+    expect(Buffer.from(out).toString('hex')).toBe(MASTER_KAT_EXPECTED_HEX)
+  }, 60_000)
+
   it('produces stable bytes for an ascii password and 16-byte salt', async () => {
     const out = await argon2id(PASSWORD_ASCII, FIXED_SALT, TEST_PARAMS)
     // Pinned @noble/hashes output. A change here means an implementation has

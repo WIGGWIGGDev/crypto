@@ -3,6 +3,9 @@ contact_links:
   - name: Report a security vulnerability
     url: https://github.com/WiggWiggDev/crypto/blob/main/SECURITY.md
     about: Please don't open a public issue for vulnerabilities. Email security@wiggwigg.ca.
+  - name: Vulnerability disclosure policy
+    url: https://wiggwigg.ca/en/security/disclosure/
+    about: Scope, rules, safe harbor, and what to expect when you report.
   - name: Security whitepaper
     url: https://wiggwigg.ca/en/security/whitepaper/
     about: How these primitives fit together and where the guarantees end.

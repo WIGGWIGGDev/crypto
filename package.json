@@ -1,6 +1,6 @@
 {
   "name": "@wiggwigg/crypto",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Cryptographic core of WIGGWIGG: key derivation, encryption, sealing, and signing primitives.",
   "keywords": [
     "cryptography",
@@ -13,7 +13,7 @@
     "zero-knowledge"
   ],
   "license": "MIT",
-  "author": "WIGGWIGG",
+  "author": "WiggWigg",
   "homepage": "https://github.com/WiggWiggDev/crypto",
   "repository": {
     "type": "git",
@@ -73,6 +73,7 @@
     "src",
     "README.md",
     "LICENSE",
+    "THIRD_PARTY_LICENSES.md",
     "CHANGELOG.md",
     "SECURITY.md"
   ],
@@ -83,15 +84,15 @@
     "all": "npm run type-check && npm run test && npm run build"
   },
   "dependencies": {
-    "@noble/ciphers": "2.1.1",
+    "@noble/ciphers": "2.2.0",
     "@noble/curves": "2.2.0",
-    "@noble/hashes": "2.0.1",
+    "@noble/hashes": "2.2.0",
     "@scure/bip39": "2.0.0"
   },
   "devDependencies": {
-    "@types/node": "24.0.0",
-    "typescript": "5.9.3",
-    "vitest": "4.0.18"
+    "@types/node": "24.13.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
   },
   "publishConfig": {
     "access": "public"

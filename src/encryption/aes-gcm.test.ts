@@ -79,15 +79,13 @@ describe('aes-gcm', () => {
     ).toThrow()
   })
 
-  // Regression: the API encrypts comms (SMS/calls/voicemail) content with a
-  // 16-byte GCM IV via Node `createCipheriv` (AES_IV_LENGTH = 16). Mobile moved
-  // comms decryption onto this shared path and the old 12-byte-only check
-  // rejected every field ("nonce must be 12 bytes, got 16") → `[Decryption
-  // Error]` on every X25519 SMS. decrypt MUST read a 16-byte-IV ciphertext.
-  it('decrypts a 16-byte-IV ciphertext produced by Node createCipheriv (comms wire format)', () => {
+  // Some producers emit a 16-byte GCM IV (Node `createCipheriv` default style)
+  // rather than the 12-byte nonce this module writes. `decrypt` MUST accept both
+  // sizes, or every such ciphertext fails with "nonce must be 12 bytes, got 16".
+  it('decrypts a 16-byte-IV ciphertext produced by Node createCipheriv', () => {
     const sessionKey = randomBytes(32)
     const iv16 = randomBytes(16)
-    const message = 'hey, this is an X25519 SMS body'
+    const message = 'hey, this is a message body'
     const cipher = createCipheriv('aes-256-gcm', sessionKey, iv16)
     const ct = Buffer.concat([cipher.update(message, 'utf8'), cipher.final()])
     const tag = cipher.getAuthTag()

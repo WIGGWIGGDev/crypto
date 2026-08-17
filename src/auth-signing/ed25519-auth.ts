@@ -22,6 +22,13 @@ import { ed25519 } from '@noble/curves/ed25519.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 
+import {
+  buildSignedPayload,
+  ED25519_PUBLIC_LEN,
+  ED25519_SEED_LEN,
+  signEd25519,
+  verifyEd25519,
+} from '../signed-payload.js'
 import { AUTH_SCHEME_CURRENT_VERSION } from '../versions.js'
 
 /**
@@ -38,10 +45,6 @@ const AUTH_HKDF_INFO = new TextEncoder().encode('wiggwigg-auth-sign-v1')
  * scheme that happens to sign similar bytes.
  */
 const LOGIN_PAYLOAD_DOMAIN = 'wiggwigg-login-v1'
-
-const ED25519_SEED_LEN = 32
-const ED25519_PUBLIC_LEN = 32
-const ED25519_SIGNATURE_LEN = 64
 
 export interface AuthSigningKeypair {
   /** 32-byte Ed25519 secret seed; the caller wipes it after use. */
@@ -88,20 +91,7 @@ export function deriveAuthPublicKey(masterKey: Uint8Array): Uint8Array {
  * cross-protocol reuse.
  */
 export function buildAuthChallengePayload(challenge: Uint8Array, accountId: string): Uint8Array {
-  const domain = new TextEncoder().encode(LOGIN_PAYLOAD_DOMAIN)
-  const account = new TextEncoder().encode(accountId)
-  const payload = new Uint8Array(domain.length + 1 + account.length + 1 + challenge.length)
-  let offset = 0
-  payload.set(domain, offset)
-  offset += domain.length
-  payload[offset] = 0x00
-  offset += 1
-  payload.set(account, offset)
-  offset += account.length
-  payload[offset] = 0x00
-  offset += 1
-  payload.set(challenge, offset)
-  return payload
+  return buildSignedPayload(LOGIN_PAYLOAD_DOMAIN, new TextEncoder().encode(accountId), challenge)
 }
 
 /**
@@ -130,12 +120,7 @@ export function buildAuthKeyProvisioningPayload(publicKey: Uint8Array): Uint8Arr
       `auth-signing: public key must be ${ED25519_PUBLIC_LEN} bytes, got ${publicKey.length}`,
     )
   }
-  const domain = new TextEncoder().encode(PROVISION_PAYLOAD_DOMAIN)
-  const payload = new Uint8Array(domain.length + 1 + publicKey.length)
-  payload.set(domain, 0)
-  payload[domain.length] = 0x00
-  payload.set(publicKey, domain.length + 1)
-  return payload
+  return buildSignedPayload(PROVISION_PAYLOAD_DOMAIN, publicKey)
 }
 
 /**
@@ -143,12 +128,7 @@ export function buildAuthKeyProvisioningPayload(publicKey: Uint8Array): Uint8Arr
  * the 64-byte signature. Build `payload` with `buildAuthChallengePayload`.
  */
 export function signAuthChallenge(privateKey: Uint8Array, payload: Uint8Array): Uint8Array {
-  if (privateKey.length !== ED25519_SEED_LEN) {
-    throw new Error(
-      `auth-signing: private seed must be ${ED25519_SEED_LEN} bytes, got ${privateKey.length}`,
-    )
-  }
-  return ed25519.sign(payload, privateKey)
+  return signEd25519(privateKey, payload)
 }
 
 /**
@@ -162,17 +142,7 @@ export function verifyAuthChallenge(
   payload: Uint8Array,
   signature: Uint8Array,
 ): boolean {
-  if (publicKey.length !== ED25519_PUBLIC_LEN) {
-    throw new Error(
-      `auth-signing: public key must be ${ED25519_PUBLIC_LEN} bytes, got ${publicKey.length}`,
-    )
-  }
-  if (signature.length !== ED25519_SIGNATURE_LEN) {
-    throw new Error(
-      `auth-signing: signature must be ${ED25519_SIGNATURE_LEN} bytes, got ${signature.length}`,
-    )
-  }
-  return ed25519.verify(signature, payload, publicKey)
+  return verifyEd25519(publicKey, payload, signature)
 }
 
 /** The auth scheme version this client/server writes. */
